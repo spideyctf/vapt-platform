@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-dark-bg text-gray-100 font-sans;
+  }
+}
+
+@layer components {
+  .sidebar-link {
+    @apply flex items-center px-4 py-3 text-gray-300 hover:text-white hover:bg-dark-card transition-colors duration-200 rounded-lg;
+  }
+  
+  .sidebar-link.active {
+    @apply bg-accent text-white;
+  }
+  
+  .card {
+    @apply bg-dark-card border border-dark-border rounded-lg p-6;
+  }
+  
+  .btn-primary {
+    @apply bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-lg transition-colors duration-200 font-medium;
+  }
+  
+  .btn-secondary {
+    @apply bg-dark-card border border-dark-border hover:bg-gray-700 text-gray-300 px-4 py-2 rounded-lg transition-colors duration-200 font-medium;
+  }
+  
+  .table-header {
+    @apply bg-dark-card border-b border-dark-border text-left py-3 px-4 font-medium text-gray-300;
+  }
+  
+  .table-cell {
+    @apply border-b border-dark-border py-3 px-4 text-gray-300;
+  }
+  
+  .status-badge {
+    @apply px-2 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .status-completed {
+    @apply bg-success/20 text-success;
+  }
+  
+  .status-pending {
+    @apply bg-warning/20 text-warning;
+  }
+  
+  .status-failed {
+    @apply bg-danger/20 text-danger;
+  }
+}
