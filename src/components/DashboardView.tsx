@@ -1,7 +1,55 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldIcon, AlertIcon } from './Icons';
 
+interface DashboardSummary {
+  totalScans: number;
+  criticalVulnerabilities: number;
+  webApplications: number;
+  mobileApplications: number;
+  recentActivity: Array<{
+    id: number;
+    message: string;
+    timestamp: string;
+    status: string;
+  }>;
+  vulnerabilityDistribution: {
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+  };
+}
+
 const DashboardView: React.FC = () => {
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Set loading to false immediately since we're not fetching dashboard data
+    setLoading(false);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-white">Loading dashboard...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-red-400">Error: {error}</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-8">
       <h2 className="text-2xl font-bold text-white mb-6">Dashboard Overview</h2>
@@ -11,7 +59,7 @@ const DashboardView: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Total Scans</p>
-              <p className="text-3xl font-bold text-white">1,247</p>
+              <p className="text-3xl font-bold text-white">{summary?.totalScans.toLocaleString() || '0'}</p>
             </div>
             <div className="w-12 h-12 bg-accent/20 rounded-lg flex items-center justify-center">
               <ShieldIcon className="w-6 h-6 text-accent" />
@@ -23,7 +71,7 @@ const DashboardView: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Critical Vulnerabilities</p>
-              <p className="text-3xl font-bold text-danger">23</p>
+              <p className="text-3xl font-bold text-danger">{summary?.criticalVulnerabilities || '0'}</p>
             </div>
             <div className="w-12 h-12 bg-danger/20 rounded-lg flex items-center justify-center">
               <AlertIcon className="w-6 h-6 text-danger" />
@@ -35,7 +83,7 @@ const DashboardView: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Web Applications</p>
-              <p className="text-3xl font-bold text-info">156</p>
+              <p className="text-3xl font-bold text-info">{summary?.webApplications || '0'}</p>
             </div>
             <div className="w-12 h-12 bg-info/20 rounded-lg flex items-center justify-center">
               <svg className="w-6 h-6 text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -49,7 +97,7 @@ const DashboardView: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Mobile Applications</p>
-              <p className="text-3xl font-bold text-warning">89</p>
+              <p className="text-3xl font-bold text-warning">{summary?.mobileApplications || '0'}</p>
             </div>
             <div className="w-12 h-12 bg-warning/20 rounded-lg flex items-center justify-center">
               <svg className="w-6 h-6 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -64,27 +112,21 @@ const DashboardView: React.FC = () => {
         <div className="card">
           <h3 className="text-lg font-semibold text-white mb-4">Recent Activity</h3>
           <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-success rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-white text-sm">E-commerce platform scan completed</p>
-                <p className="text-gray-400 text-xs">2 hours ago</p>
+            {summary?.recentActivity.map((activity) => (
+              <div key={activity.id} className="flex items-center space-x-3">
+                <div className={`w-2 h-2 rounded-full ${
+                  activity.status === 'success' ? 'bg-success' :
+                  activity.status === 'warning' ? 'bg-warning' :
+                  activity.status === 'danger' ? 'bg-danger' : 'bg-gray-400'
+                }`}></div>
+                <div className="flex-1">
+                  <p className="text-white text-sm">{activity.message}</p>
+                  <p className="text-gray-400 text-xs">{activity.timestamp}</p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-warning rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-white text-sm">Mobile banking app scan in progress</p>
-                <p className="text-gray-400 text-xs">4 hours ago</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-danger rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-white text-sm">Critical vulnerability detected in healthcare portal</p>
-                <p className="text-gray-400 text-xs">6 hours ago</p>
-              </div>
-            </div>
+            )) || (
+              <div className="text-gray-400 text-sm">No recent activity</div>
+            )}
           </div>
         </div>
 
@@ -95,36 +137,36 @@ const DashboardView: React.FC = () => {
               <span className="text-gray-300">Critical</span>
               <div className="flex items-center space-x-2">
                 <div className="w-24 bg-dark-border rounded-full h-2">
-                  <div className="bg-danger h-2 rounded-full" style={{ width: '15%' }}></div>
+                  <div className="bg-danger h-2 rounded-full" style={{ width: `${summary?.vulnerabilityDistribution.critical || 0}%` }}></div>
                 </div>
-                <span className="text-white text-sm">15%</span>
+                <span className="text-white text-sm">{summary?.vulnerabilityDistribution.critical || 0}%</span>
               </div>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-gray-300">High</span>
               <div className="flex items-center space-x-2">
                 <div className="w-24 bg-dark-border rounded-full h-2">
-                  <div className="bg-warning h-2 rounded-full" style={{ width: '25%' }}></div>
+                  <div className="bg-warning h-2 rounded-full" style={{ width: `${summary?.vulnerabilityDistribution.high || 0}%` }}></div>
                 </div>
-                <span className="text-white text-sm">25%</span>
+                <span className="text-white text-sm">{summary?.vulnerabilityDistribution.high || 0}%</span>
               </div>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-gray-300">Medium</span>
               <div className="flex items-center space-x-2">
                 <div className="w-24 bg-dark-border rounded-full h-2">
-                  <div className="bg-info h-2 rounded-full" style={{ width: '35%' }}></div>
+                  <div className="bg-info h-2 rounded-full" style={{ width: `${summary?.vulnerabilityDistribution.medium || 0}%` }}></div>
                 </div>
-                <span className="text-white text-sm">35%</span>
+                <span className="text-white text-sm">{summary?.vulnerabilityDistribution.medium || 0}%</span>
               </div>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-gray-300">Low</span>
               <div className="flex items-center space-x-2">
                 <div className="w-24 bg-dark-border rounded-full h-2">
-                  <div className="bg-success h-2 rounded-full" style={{ width: '25%' }}></div>
+                  <div className="bg-success h-2 rounded-full" style={{ width: `${summary?.vulnerabilityDistribution.low || 0}%` }}></div>
                 </div>
-                <span className="text-white text-sm">25%</span>
+                <span className="text-white text-sm">{summary?.vulnerabilityDistribution.low || 0}%</span>
               </div>
             </div>
           </div>

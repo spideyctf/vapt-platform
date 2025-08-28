@@ -1,48 +1,71 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { MobileAppIcon, PlusIcon } from './Icons';
 
+interface DashboardSummary {
+  totalScans: number;
+  criticalVulnerabilities: number;
+  webApplications: number;
+  mobileApplications: number;
+  recentActivity: Array<{
+    id: number;
+    message: string;
+    timestamp: string;
+    status: string;
+  }>;
+  vulnerabilityDistribution: {
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+  };
+}
+
 const MobileAppVAPTView: React.FC = () => {
-  return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-white">Mobile Application VAPT</h2>
-        <button className="btn-primary flex items-center space-x-2">
-          <PlusIcon />
-          <span>New Mobile App Scan</span>
-        </button>
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Set loading to false immediately since we're not fetching dashboard data
+    setLoading(false);
+  }, []);
+  if (loading) {
+    return (
+      <div className="p-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-white">Loading mobile app data...</div>
+        </div>
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-red-400">Error: {error}</div>
+        </div>
+      </div>
+    );
+  }
+
+      return (
+      <div className="p-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-white">Mobile Application VAPT</h2>
+          <button className="btn-primary flex items-center space-x-2">
+            <PlusIcon />
+            <span>New Mobile App Scan</span>
+          </button>
+        </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <div className="card mb-6">
             <h3 className="text-lg font-semibold text-white mb-4">Active Scans</h3>
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-dark-bg rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <MobileAppIcon className="w-5 h-5 text-warning" />
-                  <div>
-                    <p className="text-white font-medium">Banking Mobile App</p>
-                    <p className="text-gray-400 text-sm">com.bank.mobile</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-success rounded-full"></div>
-                  <span className="text-success text-sm">Completed</span>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between p-4 bg-dark-bg rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <MobileAppIcon className="w-5 h-5 text-warning" />
-                  <div>
-                    <p className="text-white font-medium">Social Media App</p>
-                    <p className="text-gray-400 text-sm">com.social.app</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-warning rounded-full animate-pulse"></div>
-                  <span className="text-warning text-sm">In Progress</span>
-                </div>
+              <div className="text-center text-gray-400 py-8">
+                No active scans. Start a new scan to see results here.
               </div>
             </div>
           </div>
@@ -99,15 +122,15 @@ const MobileAppVAPTView: React.FC = () => {
             <h3 className="text-lg font-semibold text-white mb-4">Statistics</h3>
             <div className="space-y-4">
               <div className="text-center">
-                <p className="text-3xl font-bold text-white">89</p>
+                <p className="text-3xl font-bold text-white">{summary?.mobileApplications || '0'}</p>
                 <p className="text-gray-400 text-sm">Mobile Apps Scanned</p>
               </div>
               <div className="text-center">
-                <p className="text-3xl font-bold text-danger">156</p>
+                <p className="text-3xl font-bold text-danger">{summary?.criticalVulnerabilities || '0'}</p>
                 <p className="text-gray-400 text-sm">Vulnerabilities Found</p>
               </div>
               <div className="text-center">
-                <p className="text-3xl font-bold text-success">92%</p>
+                <p className="text-3xl font-bold text-success">--</p>
                 <p className="text-gray-400 text-sm">Success Rate</p>
               </div>
             </div>
@@ -116,25 +139,8 @@ const MobileAppVAPTView: React.FC = () => {
           <div className="card">
             <h3 className="text-lg font-semibold text-white mb-4">Common Mobile Vulnerabilities</h3>
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-300 text-sm">Insecure Data Storage</span>
-                <span className="text-danger text-sm font-medium">34</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-300 text-sm">Weak Cryptography</span>
-                <span className="text-warning text-sm font-medium">28</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-300 text-sm">Insecure Communication</span>
-                <span className="text-info text-sm font-medium">22</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-300 text-sm">Code Tampering</span>
-                <span className="text-danger text-sm font-medium">15</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-300 text-sm">Reverse Engineering</span>
-                <span className="text-warning text-sm font-medium">19</span>
+              <div className="text-center text-gray-400 py-4">
+                No vulnerability data available. Run scans to see results here.
               </div>
             </div>
           </div>
