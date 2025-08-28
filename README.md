@@ -1,17 +1,14 @@
 # VAPT Platform | MIT CBC
 
-A modern, dark-themed Vulnerability Assessment and Penetration Testing (VAPT) platform with a React frontend and Node.js/Express backend that integrates with Burp Suite REST API.
+A Vulnerability Assessment and Penetration Testing (VAPT) platform with a React frontend and Node.js/Express backend.
 
 ## Features
 
-- **Dark Theme**: Minimalistic dark design optimized for security professionals
-- **Responsive Layout**: Fixed-width sidebar with main content area
 - **Navigation**: Dashboard, Web App VAPT, Mobile App VAPT, and Reports views
-- **Self-contained Icons**: Custom SVG icons without external dependencies
 - **Reports Management**: Clean table with real-time scan data and download functionality
 - **Search Functionality**: Global search bar in the header
 - **TypeScript**: Full type safety throughout the application
-- **Backend Integration**: Node.js/Express server with Burp Suite API integration
+- **Backend Integration**: Node.js/Express server with OWASP ZAP API integration
 - **Real-time Scanning**: Start scans and monitor progress with automatic polling
 - **Dashboard Analytics**: Real-time dashboard data from backend API
 
