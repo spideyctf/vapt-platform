@@ -219,7 +219,7 @@ async function runMobsfScan(fileBuffer, fileName, scanId) {
     const uploadResponse = await fetch(`${MOBSF_URL}/api/v1/upload`, {
       method: 'POST',
       headers: {
-        'Authorization': MOBSF_API_KEY,
+        // MobSF uses X-Mobsf-Api-Key; Authorization is not required
         'X-Mobsf-Api-Key': MOBSF_API_KEY
       },
       body: formData
@@ -242,16 +242,17 @@ async function runMobsfScan(fileBuffer, fileName, scanId) {
       hash: hash
     });
     
-    // Step 2: Start static analysis
+    // Step 2: Start static analysis (synchronous, form-encoded hash)
     console.log('Step 2: Starting static analysis...');
+    const params = new URLSearchParams();
+    params.append('hash', hash);
     const staticResponse = await fetch(`${MOBSF_URL}/api/v1/scan`, {
       method: 'POST',
       headers: {
-        'Authorization': MOBSF_API_KEY,
         'X-Mobsf-Api-Key': MOBSF_API_KEY,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/x-www-form-urlencoded'
       },
-      body: JSON.stringify({ hash: hash })
+      body: params.toString()
     });
     
     if (!staticResponse.ok) {
@@ -261,119 +262,26 @@ async function runMobsfScan(fileBuffer, fileName, scanId) {
     const staticData = await staticResponse.json();
     console.log('Static analysis response:', staticData);
     
-    // Update status
+    // Update status to near-complete since scan is synchronous
     mobsfScanResults.set(scanId, { 
       status: 'in-progress', 
-      message: 'Static analysis in progress...',
-      progress: 40,
+      message: 'Static analysis complete. Fetching report...',
+      progress: 90,
       hash: hash
     });
     
-    // Step 3: Monitor static analysis progress
-    while (true) {
-      const statusResponse = await fetch(`${MOBSF_URL}/api/v1/scan_status`, {
-        method: 'POST',
-        headers: {
-          'Authorization': MOBSF_API_KEY,
-          'X-Mobsf-Api-Key': MOBSF_API_KEY,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ hash: hash })
-      });
-      
-      if (!statusResponse.ok) {
-        throw new Error(`Failed to check scan status: ${statusResponse.status} ${statusResponse.statusText}`);
-      }
-      
-      const statusData = await statusResponse.json();
-      console.log('Scan status:', statusData);
-      
-      if (statusData.status === 'completed') {
-        break;
-      } else if (statusData.status === 'failed') {
-        throw new Error('Static analysis failed');
-      }
-      
-      // Update progress (static analysis typically takes 60% of total time)
-      const currentProgress = 40 + (statusData.progress || 0) * 0.6;
-      mobsfScanResults.set(scanId, { 
-        status: 'in-progress', 
-        message: `Static analysis: ${Math.round(currentProgress)}%`,
-        progress: Math.round(currentProgress),
-        hash: hash
-      });
-      
-      await new Promise(resolve => setTimeout(resolve, 3000)); // Check every 3 seconds
-    }
+    // Step 3: Get scan results
+    console.log('Step 3: Getting scan results...');
+    const reportParams = new URLSearchParams();
+    reportParams.append('hash', hash);
     
-    // Step 4: Start dynamic analysis (if supported)
-    console.log('Step 4: Starting dynamic analysis...');
-    const dynamicResponse = await fetch(`${MOBSF_URL}/api/v1/dynamic_scan_start`, {
-      method: 'POST',
-      headers: {
-        'Authorization': MOBSF_API_KEY,
-        'X-Mobsf-Api-Key': MOBSF_API_KEY,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ hash: hash })
-    });
-    
-    if (dynamicResponse.ok) {
-      const dynamicData = await dynamicResponse.json();
-      console.log('Dynamic analysis response:', dynamicData);
-      
-      // Update status
-      mobsfScanResults.set(scanId, { 
-        status: 'in-progress', 
-        message: 'Dynamic analysis in progress...',
-        progress: 70,
-        hash: hash
-      });
-      
-      // Monitor dynamic analysis
-      while (true) {
-        const dynamicStatusResponse = await fetch(`${MOBSF_URL}/api/v1/dynamic_scan_status`, {
-          method: 'POST',
-          headers: {
-            'Authorization': MOBSF_API_KEY,
-            'X-Mobsf-Api-Key': MOBSF_API_KEY,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ hash: hash })
-        });
-        
-        if (!dynamicStatusResponse.ok) break;
-        
-        const dynamicStatusData = await dynamicStatusResponse.json();
-        console.log('Dynamic scan status:', dynamicStatusData);
-        
-        if (dynamicStatusData.status === 'completed') {
-          break;
-        }
-        
-        // Update progress (dynamic analysis takes remaining 30%)
-        const currentProgress = 70 + (dynamicStatusData.progress || 0) * 0.3;
-        mobsfScanResults.set(scanId, { 
-          status: 'in-progress', 
-          message: `Dynamic analysis: ${Math.round(currentProgress)}%`,
-          progress: Math.round(currentProgress),
-          hash: hash
-        });
-        
-        await new Promise(resolve => setTimeout(resolve, 3000));
-      }
-    }
-    
-    // Step 5: Get scan results
-    console.log('Step 5: Getting scan results...');
     const reportResponse = await fetch(`${MOBSF_URL}/api/v1/report_json`, {
       method: 'POST',
       headers: {
-        'Authorization': MOBSF_API_KEY,
         'X-Mobsf-Api-Key': MOBSF_API_KEY,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/x-www-form-urlencoded'
       },
-      body: JSON.stringify({ hash: hash })
+      body: reportParams.toString()
     });
     
     if (!reportResponse.ok) {
@@ -450,6 +358,156 @@ app.get('/api/test-mobsf', async (req, res) => {
       message: `MobSF connection error: ${error.message}`,
       url: MOBSF_URL,
       note: 'Make sure MobSF is running on the specified URL'
+    });
+  }
+});
+
+// Download MobSF PDF report
+app.get('/api/mobsf-download-pdf/:scanId', async (req, res) => {
+  try {
+    const { scanId } = req.params;
+    const scanResult = mobsfScanResults.get(scanId);
+    
+    if (!scanResult) {
+      return res.status(404).json({ error: 'Scan not found' });
+    }
+    
+    if (scanResult.status !== 'succeeded' || !scanResult.hash) {
+      return res.status(400).json({ error: 'Scan not completed or no hash available' });
+    }
+    
+    console.log('Downloading PDF report for hash:', scanResult.hash);
+    
+    // Request PDF from MobSF - try different approaches
+    let pdfResponse;
+    
+    // Method 1: Try with form data
+    const pdfParams = new URLSearchParams();
+    pdfParams.append('hash', scanResult.hash);
+    
+    pdfResponse = await fetch(`${MOBSF_URL}/api/v1/download_pdf`, {
+      method: 'POST',
+      headers: {
+        'X-Mobsf-Api-Key': MOBSF_API_KEY,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: pdfParams.toString()
+    });
+    
+    // If that fails, try Method 2: JSON format
+    if (!pdfResponse.ok) {
+      console.log('Form data failed, trying JSON format...');
+      pdfResponse = await fetch(`${MOBSF_URL}/api/v1/download_pdf`, {
+        method: 'POST',
+        headers: {
+          'X-Mobsf-Api-Key': MOBSF_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ hash: scanResult.hash })
+      });
+    }
+    
+    // If that fails, try Method 3: GET with query params
+    if (!pdfResponse.ok) {
+      console.log('JSON format failed, trying GET with query params...');
+      pdfResponse = await fetch(`${MOBSF_URL}/api/v1/download_pdf?hash=${scanResult.hash}`, {
+        method: 'GET',
+        headers: {
+          'X-Mobsf-Api-Key': MOBSF_API_KEY
+        }
+      });
+    }
+    
+    // If that fails, try Method 4: Try different endpoint format
+    if (!pdfResponse.ok) {
+      console.log('Standard API failed, trying alternative endpoint...');
+      pdfResponse = await fetch(`${MOBSF_URL}/api/v1/report_pdf`, {
+        method: 'POST',
+        headers: {
+          'X-Mobsf-Api-Key': MOBSF_API_KEY,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: pdfParams.toString()
+      });
+    }
+    
+    if (!pdfResponse.ok) {
+      const errorText = await pdfResponse.text();
+      console.error('MobSF PDF download error:', {
+        status: pdfResponse.status,
+        statusText: pdfResponse.statusText,
+        response: errorText
+      });
+      throw new Error(`Failed to download PDF: ${pdfResponse.status} ${pdfResponse.statusText} - ${errorText}`);
+    }
+    
+    // Get the PDF buffer
+    const pdfBuffer = await pdfResponse.arrayBuffer();
+    
+    // Set appropriate headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="mobsf-report-${scanId}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.byteLength);
+    
+    // Send the PDF
+    res.send(Buffer.from(pdfBuffer));
+    
+    console.log('PDF report downloaded successfully for scan:', scanId);
+    
+  } catch (error) {
+    console.error('Error downloading PDF report:', error);
+    res.status(500).json({ 
+      error: 'Failed to download PDF report',
+      message: error.message 
+    });
+  }
+});
+
+// Test MobSF PDF download with a specific hash
+app.get('/api/test-mobsf-pdf/:hash', async (req, res) => {
+  try {
+    const { hash } = req.params;
+    console.log('Testing MobSF PDF download with hash:', hash);
+    
+    // Try the same methods as the download endpoint
+    const pdfParams = new URLSearchParams();
+    pdfParams.append('hash', hash);
+    
+    let pdfResponse = await fetch(`${MOBSF_URL}/api/v1/download_pdf`, {
+      method: 'POST',
+      headers: {
+        'X-Mobsf-Api-Key': MOBSF_API_KEY,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: pdfParams.toString()
+    });
+    
+    console.log('PDF response status:', pdfResponse.status);
+    console.log('PDF response headers:', Object.fromEntries(pdfResponse.headers.entries()));
+    
+    if (!pdfResponse.ok) {
+      const errorText = await pdfResponse.text();
+      console.log('Error response:', errorText);
+      return res.json({
+        success: false,
+        status: pdfResponse.status,
+        error: errorText,
+        method: 'form-data'
+      });
+    }
+    
+    res.json({
+      success: true,
+      status: pdfResponse.status,
+      contentType: pdfResponse.headers.get('content-type'),
+      method: 'form-data'
+    });
+    
+  } catch (error) {
+    console.error('Test PDF download error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 });
