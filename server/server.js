@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import fetch from 'node-fetch';
 import { nanoid } from 'nanoid';
+import multer from 'multer';
+import { PORT, ZAP_URL, ZAP_KEY, MOBSF_URL, MOBSF_API_KEY } from './config.js';
 
 const app = express();
 
@@ -9,14 +11,31 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 100 * 1024 * 1024 // 100MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept APK, IPA, and ZIP files
+    const allowedTypes = ['.apk', '.ipa', '.zip'];
+    const fileExt = file.originalname.toLowerCase().substring(file.originalname.lastIndexOf('.'));
+    if (allowedTypes.includes(fileExt)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only APK, IPA, and ZIP files are allowed'), false);
+    }
+  }
+});
+
 // ----------------------------------------------------------------------------------
 // Helper: Use standard ZAP API with progress tracking and comprehensive alert collection
 // ----------------------------------------------------------------------------------
-const ZAP_URL   = 'http://localhost:8080';
-const ZAP_KEY   = 'q1uvd9crju662p4ere2l91cs44';
 
 // In-memory storage for scan progress and results
 const scanResults = new Map();
+const mobsfScanResults = new Map();
 
 async function runZapScan(target, scanId) {
   try {
@@ -179,6 +198,213 @@ async function runZapScan(target, scanId) {
 }
 
 // ----------------------------------------------------------------------------------
+// Helper: MobSF API integration for mobile app scanning
+// ----------------------------------------------------------------------------------
+async function runMobsfScan(fileBuffer, fileName, scanId) {
+  try {
+    console.log('Starting MobSF scan for:', fileName, 'with ID:', scanId);
+    
+    // Update status to starting
+    mobsfScanResults.set(scanId, { 
+      status: 'in-progress', 
+      message: 'Uploading file to MobSF...',
+      progress: 0
+    });
+    
+    // Step 1: Upload file to MobSF
+    console.log('Step 1: Uploading file to MobSF...');
+    const formData = new FormData();
+    formData.append('file', new Blob([fileBuffer]), fileName);
+    
+    const uploadResponse = await fetch(`${MOBSF_URL}/api/v1/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': MOBSF_API_KEY,
+        'X-Mobsf-Api-Key': MOBSF_API_KEY
+      },
+      body: formData
+    });
+    
+    if (!uploadResponse.ok) {
+      throw new Error(`Failed to upload file: ${uploadResponse.status} ${uploadResponse.statusText}`);
+    }
+    
+    const uploadData = await uploadResponse.json();
+    console.log('Upload response:', uploadData);
+    
+    const hash = uploadData.hash;
+    
+    // Update status
+    mobsfScanResults.set(scanId, { 
+      status: 'in-progress', 
+      message: 'File uploaded, starting static analysis...',
+      progress: 20,
+      hash: hash
+    });
+    
+    // Step 2: Start static analysis
+    console.log('Step 2: Starting static analysis...');
+    const staticResponse = await fetch(`${MOBSF_URL}/api/v1/scan`, {
+      method: 'POST',
+      headers: {
+        'Authorization': MOBSF_API_KEY,
+        'X-Mobsf-Api-Key': MOBSF_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ hash: hash })
+    });
+    
+    if (!staticResponse.ok) {
+      throw new Error(`Failed to start static analysis: ${staticResponse.status} ${staticResponse.statusText}`);
+    }
+    
+    const staticData = await staticResponse.json();
+    console.log('Static analysis response:', staticData);
+    
+    // Update status
+    mobsfScanResults.set(scanId, { 
+      status: 'in-progress', 
+      message: 'Static analysis in progress...',
+      progress: 40,
+      hash: hash
+    });
+    
+    // Step 3: Monitor static analysis progress
+    while (true) {
+      const statusResponse = await fetch(`${MOBSF_URL}/api/v1/scan_status`, {
+        method: 'POST',
+        headers: {
+          'Authorization': MOBSF_API_KEY,
+          'X-Mobsf-Api-Key': MOBSF_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ hash: hash })
+      });
+      
+      if (!statusResponse.ok) {
+        throw new Error(`Failed to check scan status: ${statusResponse.status} ${statusResponse.statusText}`);
+      }
+      
+      const statusData = await statusResponse.json();
+      console.log('Scan status:', statusData);
+      
+      if (statusData.status === 'completed') {
+        break;
+      } else if (statusData.status === 'failed') {
+        throw new Error('Static analysis failed');
+      }
+      
+      // Update progress (static analysis typically takes 60% of total time)
+      const currentProgress = 40 + (statusData.progress || 0) * 0.6;
+      mobsfScanResults.set(scanId, { 
+        status: 'in-progress', 
+        message: `Static analysis: ${Math.round(currentProgress)}%`,
+        progress: Math.round(currentProgress),
+        hash: hash
+      });
+      
+      await new Promise(resolve => setTimeout(resolve, 3000)); // Check every 3 seconds
+    }
+    
+    // Step 4: Start dynamic analysis (if supported)
+    console.log('Step 4: Starting dynamic analysis...');
+    const dynamicResponse = await fetch(`${MOBSF_URL}/api/v1/dynamic_scan_start`, {
+      method: 'POST',
+      headers: {
+        'Authorization': MOBSF_API_KEY,
+        'X-Mobsf-Api-Key': MOBSF_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ hash: hash })
+    });
+    
+    if (dynamicResponse.ok) {
+      const dynamicData = await dynamicResponse.json();
+      console.log('Dynamic analysis response:', dynamicData);
+      
+      // Update status
+      mobsfScanResults.set(scanId, { 
+        status: 'in-progress', 
+        message: 'Dynamic analysis in progress...',
+        progress: 70,
+        hash: hash
+      });
+      
+      // Monitor dynamic analysis
+      while (true) {
+        const dynamicStatusResponse = await fetch(`${MOBSF_URL}/api/v1/dynamic_scan_status`, {
+          method: 'POST',
+          headers: {
+            'Authorization': MOBSF_API_KEY,
+            'X-Mobsf-Api-Key': MOBSF_API_KEY,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ hash: hash })
+        });
+        
+        if (!dynamicStatusResponse.ok) break;
+        
+        const dynamicStatusData = await dynamicStatusResponse.json();
+        console.log('Dynamic scan status:', dynamicStatusData);
+        
+        if (dynamicStatusData.status === 'completed') {
+          break;
+        }
+        
+        // Update progress (dynamic analysis takes remaining 30%)
+        const currentProgress = 70 + (dynamicStatusData.progress || 0) * 0.3;
+        mobsfScanResults.set(scanId, { 
+          status: 'in-progress', 
+          message: `Dynamic analysis: ${Math.round(currentProgress)}%`,
+          progress: Math.round(currentProgress),
+          hash: hash
+        });
+        
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
+    }
+    
+    // Step 5: Get scan results
+    console.log('Step 5: Getting scan results...');
+    const reportResponse = await fetch(`${MOBSF_URL}/api/v1/report_json`, {
+      method: 'POST',
+      headers: {
+        'Authorization': MOBSF_API_KEY,
+        'X-Mobsf-Api-Key': MOBSF_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ hash: hash })
+    });
+    
+    if (!reportResponse.ok) {
+      throw new Error(`Failed to get scan report: ${reportResponse.status} ${reportResponse.statusText}`);
+    }
+    
+    const reportData = await reportResponse.json();
+    console.log('Report data received, total findings:', reportData.findings ? Object.keys(reportData.findings).length : 0);
+    
+    // Update with final results
+    mobsfScanResults.set(scanId, { 
+      status: 'succeeded', 
+      message: 'MobSF scan completed successfully!',
+      progress: 100,
+      hash: hash,
+      report: reportData
+    });
+    
+    console.log('MobSF scan completed for:', fileName);
+    
+  } catch (error) {
+    console.error('Error in MobSF scan:', error);
+    mobsfScanResults.set(scanId, { 
+      status: 'failed', 
+      message: error.message || 'MobSF scan failed',
+      progress: 0
+    });
+  }
+}
+
+// ----------------------------------------------------------------------------------
 // REST endpoints
 // ----------------------------------------------------------------------------------
 
@@ -187,8 +413,45 @@ app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     message: 'VAPT Backend Server is running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    services: {
+      zap: ZAP_URL,
+      mobsf: MOBSF_URL
+    }
   });
+});
+
+// Test MobSF connectivity
+app.get('/api/test-mobsf', async (req, res) => {
+  try {
+    // Try to access the MobSF web interface to test basic connectivity
+    const response = await fetch(`${MOBSF_URL}/`, {
+      method: 'GET',
+      timeout: 5000
+    });
+    
+    if (response.ok || response.status === 200) {
+      res.json({ 
+        status: 'OK', 
+        message: 'MobSF server is reachable',
+        url: MOBSF_URL,
+        note: 'API endpoints will be tested when a scan is initiated'
+      });
+    } else {
+      res.status(500).json({ 
+        status: 'ERROR', 
+        message: `MobSF server not reachable: ${response.status} ${response.statusText}`,
+        url: MOBSF_URL
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'ERROR', 
+      message: `MobSF connection error: ${error.message}`,
+      url: MOBSF_URL,
+      note: 'Make sure MobSF is running on the specified URL'
+    });
+  }
 });
 
 // Start ZAP scan - returns scanId immediately for frontend polling
@@ -238,9 +501,62 @@ app.get('/api/scan-status/:scanId', async (req, res) => {
   res.json(result);
 });
 
+// Start MobSF scan - for mobile app analysis
+app.post('/api/start-mobsf-scan', upload.single('app'), async (req, res) => {
+  try {
+    // Check if file was uploaded
+    if (!req.file) {
+      return res.status(400).json({ message: 'Mobile app file required' });
+    }
+
+    const file = req.file;
+    const fileName = file.originalname;
+    const fileBuffer = file.buffer;
+
+    // Generate a unique scan ID
+    const scanId = nanoid(8);
+    
+    // Initialize scan status
+    mobsfScanResults.set(scanId, { 
+      status: 'starting', 
+      message: 'Initializing MobSF scan...',
+      progress: 0
+    });
+    
+    // Start the MobSF scan in the background
+    runMobsfScan(fileBuffer, fileName, scanId);
+    
+    // Return the scan ID immediately
+    res.json({ 
+      scanId: scanId,
+      message: 'MobSF scan started successfully'
+    });
+    
+  } catch (error) {
+    console.error('Error starting MobSF scan:', error);
+    res.status(500).json({ 
+      status: 'failed', 
+      message: error.message || 'Failed to start MobSF scan'
+    });
+  }
+});
+
+// Check MobSF scan status and progress
+app.get('/api/mobsf-scan-status/:scanId', async (req, res) => {
+  const { scanId } = req.params;
+  
+  const result = mobsfScanResults.get(scanId);
+  if (!result) {
+    return res.status(404).json({ error: 'MobSF scan not found' });
+  }
+
+  res.json(result);
+});
+
 // Start server
-const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`VAPT Backend Server running on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/api/health`);
+  console.log(`ZAP API: ${ZAP_URL}`);
+  console.log(`MobSF API: ${MOBSF_URL}`);
 });
