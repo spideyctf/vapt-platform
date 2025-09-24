@@ -1,21 +1,30 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { LogoIcon } from './Icons';
 
 const NewHeader: React.FC = () => {
+  const location = useLocation();
+  
+  const getLinkClass = (path: string) => {
+    const isActive = location.pathname === path;
+    return `text-sm font-medium transition-colors ${
+      isActive ? 'text-primary' : 'hover:text-primary'
+    }`;
+  };
+
   return (
     <header className="flex items-center justify-between whitespace-nowrap border-b border-primary/20 dark:border-primary/30 px-10 py-3">
-      <div className="flex items-center gap-4 text-gray-900 dark:text-white">
+      <Link to="/" className="flex items-center gap-4 text-gray-900 dark:text-white hover:opacity-80 transition-opacity">
         <LogoIcon className="w-8 h-8" />
         <h2 className="text-lg font-bold">VAPT Platform</h2>
-      </div>
+      </Link>
       <div className="flex flex-1 justify-end gap-6 items-center">
         <div className="hidden md:flex items-center gap-6">
-          <Link className="text-sm font-medium hover:text-primary transition-colors" to="/">Home</Link>
-          <Link className="text-sm font-medium hover:text-primary transition-colors" to="/dashboard">Dashboard</Link>
-          <Link className="text-sm font-medium hover:text-primary transition-colors" to="/web">Web VAPT</Link>
-          <Link className="text-sm font-medium hover:text-primary transition-colors" to="/mobile">Mobile VAPT</Link>
-          <Link className="text-sm font-medium hover:text-primary transition-colors" to="/reports">Reports</Link>
+          <Link className={getLinkClass('/')} to="/">Home</Link>
+          <Link className={getLinkClass('/dashboard')} to="/dashboard">Dashboard</Link>
+          <Link className={getLinkClass('/web')} to="/web">Web VAPT</Link>
+          <Link className={getLinkClass('/mobile')} to="/mobile">Mobile VAPT</Link>
+          <Link className={getLinkClass('/reports')} to="/reports">Reports</Link>
         </div>
         <button className="flex items-center justify-center rounded-full size-10 bg-primary/10 dark:bg-primary/20 text-gray-600 dark:text-gray-300 hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors">
           <svg fill="currentColor" height="20px" viewBox="0 0 256 256" width="20px" xmlns="http://www.w3.org/2000/svg">
