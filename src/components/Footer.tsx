@@ -4,7 +4,7 @@ const Footer: React.FC = () => {
   return (
     <footer className="border-t border-primary/20 dark:border-primary/30 py-6 px-4 sm:px-6 md:px-10">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-center">
-        <p className="text-sm text-gray-600 dark:text-gray-400">© 2024 VAPT Platform. All rights reserved.</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">© 2025 VAPT Platform. All rights reserved.</p>
         <div className="flex gap-4">
           <a className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors" href="#">
             <svg fill="currentColor" height="24px" viewBox="0 0 256 256" width="24px" xmlns="http://www.w3.org/2000/svg">

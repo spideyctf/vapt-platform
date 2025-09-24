@@ -231,26 +231,26 @@ const WebAppVAPTView: React.FC = () => {
 
   /* ---------- UI ---------- */
   return (
-    <div className="p-8">
+    <div className="px-4 sm:px-6 md:px-10 lg:px-20 xl:px-40 py-10">
       {/* Header ------------------------------------------------ */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-white">Web Application VAPT</h2>
-        <button className="btn-primary flex items-center space-x-2">
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Web Application VAPT</h2>
+        <button className="px-5 py-3 rounded-lg bg-primary text-white font-bold text-sm shadow-[0_4px_0_0_#0a44a5] hover:shadow-[0_2px_0_0_#0a44a5] hover:-translate-y-0.5 transition-all duration-200 flex items-center space-x-2">
           <PlusIcon />
           <span>New Web App Scan</span>
         </button>
       </div>
 
       {/* Scan configuration card ------------------------------ */}
-      <div className="card mb-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Scan Configuration</h3>
+      <div className="rounded-xl border border-primary/20 dark:border-primary/30 bg-primary/5 dark:bg-primary/10 p-6 shadow-lg backdrop-blur-sm mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Scan Configuration</h3>
 
-        <label className="block text-gray-300 text-sm font-medium mb-2">
+        <label className="block text-gray-600 dark:text-gray-400 text-sm font-medium mb-2">
           Target URL
         </label>
         <input
-          className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2
-                     text-white placeholder-gray-500 focus:outline-none focus:border-accent"
+          className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2
+                     text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
           type="url"
           placeholder="https://example.com"
           value={targetUrl}
@@ -259,7 +259,7 @@ const WebAppVAPTView: React.FC = () => {
 
         <div className="flex items-center space-x-3 mt-4">
           <button
-            className={`btn-primary flex items-center space-x-2
+            className={`px-5 py-3 rounded-lg bg-primary text-white font-bold text-sm shadow-[0_4px_0_0_#0a44a5] hover:shadow-[0_2px_0_0_#0a44a5] hover:-translate-y-0.5 transition-all duration-200 flex items-center space-x-2
                        ${loading || !targetUrl.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
             disabled={loading || !targetUrl.trim()}
             onClick={startScan}
@@ -272,12 +272,12 @@ const WebAppVAPTView: React.FC = () => {
 
       {/* Progress Section ------------------------------------- */}
       {progress && (
-        <div className="card mb-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Scan Progress</h3>
+        <div className="rounded-xl border border-primary/20 dark:border-primary/30 bg-primary/5 dark:bg-primary/10 p-6 shadow-lg backdrop-blur-sm mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Scan Progress</h3>
           
           <div className="mb-4">
-            <p className="text-gray-300 mb-2">{progress.message}</p>
-            <p className="text-sm text-gray-500">Target: {progress.targetUrl}</p>
+            <p className="text-gray-600 dark:text-gray-400 mb-2">{progress.message}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-500">Target: {progress.targetUrl}</p>
           </div>
 
           {/* Spider Scan Progress */}
@@ -286,9 +286,9 @@ const WebAppVAPTView: React.FC = () => {
               <span>Spider Scan</span>
               <span>{progress.spiderProgress}%</span>
             </div>
-            <div className="w-full bg-dark-bg rounded-full h-2">
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
               <div 
-                className="bg-blue-500 h-2 rounded-full transition-all duration-500"
+                className="bg-primary h-2 rounded-full transition-all duration-500"
                 style={{ width: `${progress.spiderProgress}%` }}
               ></div>
             </div>
@@ -300,7 +300,7 @@ const WebAppVAPTView: React.FC = () => {
               <span>Active Scan</span>
               <span>{progress.activeScanProgress}%</span>
             </div>
-            <div className="w-full bg-dark-bg rounded-full h-2">
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
               <div 
                 className="bg-green-500 h-2 rounded-full transition-all duration-500"
                 style={{ width: `${progress.activeScanProgress}%` }}
@@ -330,8 +330,8 @@ const WebAppVAPTView: React.FC = () => {
 
       {/* Results ---------------------------------------------- */}
       {report && (
-        <div className="card">
-          <h3 className="text-lg font-semibold text-white mb-4">ZAP Scan Results</h3>
+        <div className="rounded-xl border border-primary/20 dark:border-primary/30 bg-primary/5 dark:bg-primary/10 p-6 shadow-lg backdrop-blur-sm">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">ZAP Scan Results</h3>
 
           {/* summary tiles */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
@@ -342,9 +342,9 @@ const WebAppVAPTView: React.FC = () => {
               { label: 'Low',       value: report.low,    colour: 'info' },
               { label: 'Info',      value: report.informational, colour: 'gray-400' },
             ].map((t, i) => (
-              <div key={i} className="text-center p-4 bg-dark-bg rounded-lg">
-                <p className={`text-2xl font-bold text-${t.colour}`}>{t.value}</p>
-                <p className="text-gray-400 text-sm">{t.label}</p>
+              <div key={i} className="text-center p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                <p className={`text-2xl font-bold ${t.colour === 'white' ? 'text-gray-900 dark:text-white' : t.colour === 'danger' ? 'text-red-500' : t.colour === 'warning' ? 'text-yellow-500' : t.colour === 'info' ? 'text-blue-500' : 'text-gray-400'}`}>{t.value}</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">{t.label}</p>
               </div>
             ))}
           </div>
@@ -352,21 +352,21 @@ const WebAppVAPTView: React.FC = () => {
           {/* detailed table */}
           {report.details.length > 0 && (
             <>
-              <h4 className="text-md font-semibold text-white mb-3">Detailed Findings</h4>
+              <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-3">Detailed Findings</h4>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-dark-border">
-                      <th className="text-left py-2 px-3 text-gray-300">Vulnerability</th>
-                      <th className="text-left py-2 px-3 text-gray-300">URL</th>
-                      <th className="text-left py-2 px-3 text-gray-300">Risk</th>
+                    <tr className="border-b border-gray-200 dark:border-gray-700">
+                      <th className="text-left py-2 px-3 text-gray-600 dark:text-gray-400">Vulnerability</th>
+                      <th className="text-left py-2 px-3 text-gray-600 dark:text-gray-400">URL</th>
+                      <th className="text-left py-2 px-3 text-gray-600 dark:text-gray-400">Risk</th>
                     </tr>
                   </thead>
                   <tbody>
                     {report.details.map((a, idx) => (
-                      <tr key={idx} className="border-b border-dark-border/50">
-                        <td className="py-2 px-3 text-white">{a.alert}</td>
-                        <td className="py-2 px-3 text-gray-400 truncate max-w-xs">{a.url}</td>
+                      <tr key={idx} className="border-b border-gray-200 dark:border-gray-700">
+                        <td className="py-2 px-3 text-gray-900 dark:text-white">{a.alert}</td>
+                        <td className="py-2 px-3 text-gray-600 dark:text-gray-400 truncate max-w-xs">{a.url}</td>
                         <td className="py-2 px-3">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                             a.riskcode === '3' ? 'bg-danger/20 text-danger'

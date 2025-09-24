@@ -15,6 +15,7 @@ const NewHeader: React.FC = () => {
       <div className="flex flex-1 justify-end gap-6 items-center">
         <div className="hidden md:flex items-center gap-6">
           <Link className="text-sm font-medium hover:text-primary transition-colors" to="/">Home</Link>
+          <Link className="text-sm font-medium hover:text-primary transition-colors" to="/dashboard">Dashboard</Link>
           <Link className="text-sm font-medium hover:text-primary transition-colors" to="/web">Web VAPT</Link>
           <Link className="text-sm font-medium hover:text-primary transition-colors" to="/mobile">Mobile VAPT</Link>
           <Link className="text-sm font-medium hover:text-primary transition-colors" to="/reports">Reports</Link>

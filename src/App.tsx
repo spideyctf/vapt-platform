@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import NewHeader from './components/NewHeader';
 import NewHero from './components/NewHero';
 import Footer from './components/Footer';
+import DashboardView from './components/DashboardView';
 import WebAppVAPTView from './components/WebAppVAPTView';
 import MobileAppVAPTView from './components/MobileAppVAPTView';
 import ReportsView from './components/ReportsView';
@@ -17,9 +18,10 @@ const App: React.FC = () => {
             <NewHeader />
             <Routes>
               <Route path="/" element={<NewHero />} />
-              <Route path="/web" element={<div className="p-8"><WebAppVAPTView /></div>} />
-              <Route path="/mobile" element={<div className="p-8"><MobileAppVAPTView /></div>} />
-              <Route path="/reports" element={<div className="p-8"><ReportsView /></div>} />
+              <Route path="/dashboard" element={<DashboardView />} />
+              <Route path="/web" element={<WebAppVAPTView />} />
+              <Route path="/mobile" element={<MobileAppVAPTView />} />
+              <Route path="/reports" element={<ReportsView />} />
             </Routes>
             <Footer />
           </div>

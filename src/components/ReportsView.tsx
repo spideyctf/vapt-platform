@@ -114,65 +114,69 @@ const ReportsView: React.FC = () => {
   };
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-white">Reports</h2>
+    <div className="px-4 sm:px-6 md:px-10 lg:px-20 xl:px-40 py-10">
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Reports</h2>
         <button
           onClick={handleGenerateReport}
           disabled={isGenerating}
-          className={`btn-primary flex items-center space-x-2 ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`px-5 py-3 rounded-lg bg-primary text-white font-bold text-sm shadow-[0_4px_0_0_#0a44a5] hover:shadow-[0_2px_0_0_#0a44a5] hover:-translate-y-0.5 transition-all duration-200 flex items-center space-x-2 ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           <PlusIcon />
           <span>{isGenerating ? 'Generating...' : 'Generate New Report'}</span>
         </button>
       </div>
 
-      <div className="card">
+      <div className="rounded-xl border border-primary/20 dark:border-primary/30 bg-primary/5 dark:bg-primary/10 p-6 shadow-lg backdrop-blur-sm">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr>
-                <th className="table-header">Report Title</th>
-                <th className="table-header">Type</th>
-                <th className="table-header">Date Generated</th>
-                <th className="table-header">Vulnerabilities</th>
-                <th className="table-header">Status</th>
-                <th className="table-header">Actions</th>
+                <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Report Title</th>
+                <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Type</th>
+                <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Date Generated</th>
+                <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Vulnerabilities</th>
+                <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Status</th>
+                <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
               {reports.length > 0 ? (
                 reports.map((report) => (
-                  <tr key={report.id} className="hover:bg-dark-bg/50 transition-colors">
-                    <td className="table-cell font-medium text-white">
+                  <tr key={report.id} className="hover:bg-white/50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-200 dark:border-gray-700">
+                    <td className="py-3 px-4 font-medium text-gray-900 dark:text-white">
                       {report.title}
                     </td>
-                    <td className="table-cell">
+                    <td className="py-3 px-4">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         report.type === 'Web App' 
-                          ? 'bg-info/20 text-info' 
-                          : 'bg-warning/20 text-warning'
+                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
+                          : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400'
                       }`}>
                         {report.type}
                       </span>
                     </td>
-                    <td className="table-cell text-gray-400">
+                    <td className="py-3 px-4 text-gray-600 dark:text-gray-400">
                       {report.dateGenerated}
                     </td>
-                    <td className="table-cell">
-                      <span className="font-mono text-lg font-semibold text-white">
+                    <td className="py-3 px-4">
+                      <span className="font-mono text-lg font-semibold text-gray-900 dark:text-white">
                         {report.vulnerabilities}
                       </span>
                     </td>
-                    <td className="table-cell">
-                      <span className={`status-badge ${getStatusClass(report.status)}`}>
+                    <td className="py-3 px-4">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        report.status === 'Completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' :
+                        report.status === 'Pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400' :
+                        'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                      }`}>
                         {report.status}
                       </span>
                     </td>
-                    <td className="table-cell">
+                    <td className="py-3 px-4">
                       <button
                         onClick={() => handleDownload(report.id)}
-                        className="flex items-center space-x-1 text-accent hover:text-accent-hover transition-colors"
+                        className="flex items-center space-x-1 text-primary hover:text-primary/80 transition-colors"
                       >
                         <DownloadIcon />
                         <span>Download</span>
@@ -182,7 +186,7 @@ const ReportsView: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="table-cell text-center text-gray-400 py-8">
+                  <td colSpan={6} className="py-8 px-4 text-center text-gray-600 dark:text-gray-400">
                     No reports available. Generate your first report to get started.
                   </td>
                 </tr>
